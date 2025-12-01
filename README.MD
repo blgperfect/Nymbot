@@ -1,6 +1,4 @@
-Voici la version **100 % française**, propre, professionnelle et prête à être **copiée dans Visual Studio Code** pour GitHub.
 
----
 
 # **Nymbot — Bot Discord Open Source généré par IA**
 
@@ -145,6 +143,4 @@ et à 50 % par l’IA.
 Même si, entre nous, elle prétend avoir fait « toute la partie intelligente ».
 On la laisse parler — ça la motive.
 
----
 
-Si tu veux une version encore plus design (badges GitHub, logo, couleurs, structure visuelle améliorée), je peux te la créer.
