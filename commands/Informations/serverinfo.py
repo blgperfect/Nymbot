@@ -17,16 +17,18 @@ class ServerInfoCommand(commands.Cog):
         guild = interaction.guild
         preset = CONFIG["embed_default"]
 
-        # Compteurs
+        # Compteurs membres
         total_members = guild.member_count
-        humans = sum(1 for m in guild.members if not m.bot)
+        humans = sum(not m.bot for m in guild.members)
         bots = total_members - humans
 
+        # Salons
         text_channels = len(guild.text_channels)
         voice_channels = len(guild.voice_channels)
         categories = len(guild.categories)
 
-        # Date de création
+        # Informations complémentaires
+        owner = guild.owner
         created_at = guild.created_at.strftime("%d/%m/%Y • %H:%M")
 
         embed = discord.Embed(
@@ -39,48 +41,44 @@ class ServerInfoCommand(commands.Cog):
         if guild.icon:
             embed.set_thumbnail(url=guild.icon.url)
 
-        # Champs principaux
-        embed.add_field(
-            name="🏷️ Nom",
-            value=guild.name,
-            inline=True
-        )
-
-        embed.add_field(
-            name="🆔 ID",
-            value=str(guild.id),
-            inline=True
-        )
-
-        embed.add_field(
-            name="👑 Propriétaire",
-            value=f"<@{guild.owner_id}>",
-            inline=True
-        )
-
-        embed.add_field(
-            name="👥 Membres",
-            value=f"**Total :** {total_members}\n**Humains :** {humans}\n**Bots :** {bots}",
-            inline=True
-        )
-
-        embed.add_field(
-            name="📚 Salons",
-            value=(
+        # Liste des champs pour un code plus propre
+        fields = [
+            ("🏷️ Nom", guild.name, True),
+            ("🆔 ID", str(guild.id), True),
+            ("👑 Propriétaire", owner.mention if owner else "Inconnu", True),
+            (
+                "👥 Membres",
+                f"**Total :** {total_members}\n"
+                f"**Humains :** {humans}\n"
+                f"**Bots :** {bots}",
+                True
+            ),
+            (
+                "📚 Salons",
                 f"📄 Textuels : {text_channels}\n"
                 f"🔊 Vocaux : {voice_channels}\n"
-                f"📁 Catégories : {categories}"
+                f"📁 Catégories : {categories}",
+                True
             ),
-            inline=True
-        )
+            ("📆 Créé le", created_at, False),
+            (
+                "✨ Boost",
+                f"Niveau : {guild.premium_tier}\n"
+                f"Boosts : {guild.premium_subscription_count}",
+                True
+            ),
+            (
+                "😀 Emojis",
+                f"{len(guild.emojis)} emojis",
+                True
+            ),
+        ]
 
-        embed.add_field(
-            name="📆 Créé le",
-            value=f"{created_at}",
-            inline=False
-        )
+        # Ajout des champs dans l'embed
+        for name, value, inline in fields:
+            embed.add_field(name=name, value=value, inline=inline)
 
-        # Footer via preset obligatoire
+        # Footer depuis preset
         embed.set_footer(text=preset["footer"])
 
         await interaction.response.send_message(embed=embed)
@@ -88,3 +86,4 @@ class ServerInfoCommand(commands.Cog):
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(ServerInfoCommand(bot))
+
