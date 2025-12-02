@@ -24,6 +24,7 @@ TOKEN = os.getenv("DISCORD_TOKEN")
 intents = discord.Intents.default()
 intents.guilds = True
 intents.members = True
+intents.presences = True        # <-- indispensable pour les statuts
 intents.message_content = True
 
 # ------------------------------------------------------------
