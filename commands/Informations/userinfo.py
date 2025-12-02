@@ -17,12 +17,11 @@ class UserInfoCommand(commands.Cog):
     )
     async def userinfo(self, interaction: discord.Interaction, membre: discord.User = None):
         user = membre or interaction.user
-        preset = CONFIG["embed_default"]
+        preset = CONFIG.get("embed_default", {"color": 0x2F3136, "footer": "Bot"})
+        member = interaction.guild.get_member(user.id) if interaction.guild else None
 
         try:
-            member = interaction.guild.get_member(user.id) if interaction.guild else None
-
-            # Statut : seulement si membre du serveur
+            # Statut utilisateur
             if member:
                 status_map = {
                     discord.Status.online: "🟢 En ligne",
@@ -35,37 +34,38 @@ class UserInfoCommand(commands.Cog):
             else:
                 status = "⚪ Hors serveur / inconnu"
 
-            # Badges / flags
-            flags = [flag.replace("_", " ").title() for flag, has in user.public_flags if has]
+            # Badges utilisateur
+            flags = [flag.replace("_", " ").title() for flag, value in user.public_flags if value]
             badges = ", ".join(flags) if flags else "Aucun"
 
-            # Rôles du serveur
-            roles = ", ".join([role.mention for role in member.roles[1:]]) if member else "N/A"
+            # Rôles
+            roles = (
+                ", ".join([role.mention for role in member.roles if role.name != "@everyone"])
+                if member and len(member.roles) > 1 else "Aucun"
+            )
 
             # Dates
             created_at = user.created_at.strftime("%d/%m/%Y • %H:%M")
             joined_at = member.joined_at.strftime("%d/%m/%Y • %H:%M") if member and member.joined_at else "N/A"
 
-            # Embed structuré et lisible
-            embed = discord.Embed(
-                title=f"👤 Informations sur {user}",
-                color=preset["color"],
-                description=f"Informations textuelles sur {user.display_name}."
+            # Construction du texte esthétique
+            text = (
+                f"**👤 Informations sur {user.display_name}**\n\n"
+                f"**• Tag :** `{user}`\n"
+                f"**• ID :** `{user.id}`\n"
+                f"**• Statut :** {status}\n\n"
+                f"**🏅 Badges :** {badges}\n"
+                f"**🛡️ Rôles :** {roles}\n\n"
+                f"**📅 Compte créé :** {created_at}\n"
+                f"**📅 Rejoint le serveur :** {joined_at}"
             )
 
-            # Infos de base
-            embed.add_field(name="Tag", value=str(user), inline=True)
-            embed.add_field(name="ID", value=str(user.id), inline=True)
-            embed.add_field(name="Statut", value=status, inline=True)
-
-            # Badges et rôles
-            embed.add_field(name="Badges", value=badges, inline=False)
-            embed.add_field(name="Rôles", value=roles, inline=False)
-
-            # Dates importantes
-            embed.add_field(name="Compte Discord créé le", value=created_at, inline=True)
-            embed.add_field(name="A rejoint ce serveur le", value=joined_at, inline=True)
-
+            # Embed sobre mais lisible
+            embed = discord.Embed(
+                description=text,
+                color=preset["color"],
+                timestamp=datetime.utcnow()
+            )
             embed.set_footer(text=preset["footer"])
 
             await interaction.response.send_message(embed=embed)
