@@ -2,7 +2,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from config.config import CONFIG
-from datetime import datetime
+from datetime import datetime, timezone
 
 class UserInfoCommand(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -18,21 +18,32 @@ class UserInfoCommand(commands.Cog):
     async def userinfo(self, interaction: discord.Interaction, membre: discord.User = None):
         user = membre or interaction.user
         preset = CONFIG.get("embed_default", {"color": 0x2F3136, "footer": "Bot"})
-        member = interaction.guild.get_member(user.id) if interaction.guild else None
 
         try:
-            # Statut utilisateur
-            if member:
-                status_map = {
-                    discord.Status.online: "🟢 En ligne",
-                    discord.Status.idle: "🌙 Inactif",
-                    discord.Status.dnd: "⛔ Ne pas déranger",
-                    discord.Status.offline: "⚪ Hors ligne",
-                    discord.Status.invisible: "⚪ Invisible"
-                }
-                status = status_map.get(member.status, "⚪ Inconnu")
-            else:
-                status = "⚪ Hors serveur / inconnu"
+            member = None
+            status = "⚪ Hors serveur / inconnu"
+
+            # Récupération du Member si dans un serveur
+            if interaction.guild:
+                member = interaction.guild.get_member(user.id)  # cache
+                if not member:
+                    try:
+                        member = await interaction.guild.fetch_member(user.id)
+                    except discord.NotFound:
+                        member = None
+
+                # Statut
+                if member:
+                    status_map = {
+                        discord.Status.online: "🟢 En ligne",
+                        discord.Status.idle: "🌙 Inactif",
+                        discord.Status.dnd: "⛔ Ne pas déranger",
+                        discord.Status.offline: "⚪ Hors ligne",
+                        discord.Status.invisible: "⚪ Invisible"
+                    }
+                    status = status_map.get(member.status, "⚪ Inconnu")
+                else:
+                    status = "⚪ Hors serveur"
 
             # Badges utilisateur
             flags = [flag.replace("_", " ").title() for flag, value in user.public_flags if value]
@@ -48,7 +59,7 @@ class UserInfoCommand(commands.Cog):
             created_at = user.created_at.strftime("%d/%m/%Y • %H:%M")
             joined_at = member.joined_at.strftime("%d/%m/%Y • %H:%M") if member and member.joined_at else "N/A"
 
-            # Construction du texte esthétique
+            # Texte esthétique
             text = (
                 f"**👤 Informations sur {user.display_name}**\n\n"
                 f"**• Tag :** `{user}`\n"
@@ -60,11 +71,10 @@ class UserInfoCommand(commands.Cog):
                 f"**📅 Rejoint le serveur :** {joined_at}"
             )
 
-            # Embed sobre mais lisible
             embed = discord.Embed(
                 description=text,
                 color=preset["color"],
-                timestamp=datetime.utcnow()
+                timestamp=datetime.now(timezone.utc)  # Timestamp UTC correct
             )
             embed.set_footer(text=preset["footer"])
 
