@@ -1,0 +1,91 @@
+local Lighting = game:GetService("Lighting")
+local Workspace = game:GetService("Workspace")
+
+---------------------------------------------------
+-- RESET OLD MAP
+---------------------------------------------------
+
+if Workspace:FindFirstChild("NEON_OBBY") then
+	Workspace.NEON_OBBY:Destroy()
+end
+
+local world = Instance.new("Folder")
+world.Name = "NEON_OBBY"
+world.Parent = Workspace
+
+---------------------------------------------------
+-- LIGHTING FIX
+---------------------------------------------------
+
+Lighting.Brightness = 1.5
+Lighting.ClockTime = 14
+Lighting.FogEnd = 1000
+
+for _,v in pairs(Lighting:GetChildren()) do
+	if v:IsA("BloomEffect") then
+		v:Destroy()
+	end
+end
+
+---------------------------------------------------
+-- HUB PLATFORM
+---------------------------------------------------
+
+local hub = Instance.new("Part")
+hub.Size = Vector3.new(120,4,120)
+hub.Anchored = true
+hub.Material = Enum.Material.Neon
+hub.Color = Color3.fromRGB(80,170,255)
+hub.Position = Vector3.new(0,60,0)
+hub.Parent = world
+
+---------------------------------------------------
+-- SPAWN FIX
+---------------------------------------------------
+
+local spawn = Instance.new("SpawnLocation")
+spawn.Size = Vector3.new(10,1,10)
+spawn.Position = Vector3.new(0,65,0)
+spawn.Anchored = true
+spawn.Parent = world
+
+---------------------------------------------------
+-- GENERATE OBBY
+---------------------------------------------------
+
+local previousPos = Vector3.new(0,70,100)
+
+for i = 1,50 do
+	
+	local platform = Instance.new("Part")
+	platform.Size = Vector3.new(25,2,25)
+	platform.Anchored = true
+	platform.Material = Enum.Material.Neon
+	platform.Color = Color3.fromHSV(i/50,1,1)
+	
+	platform.Position = previousPos
+	platform.Parent = world
+	
+	previousPos = previousPos + Vector3.new(0,0,80)
+	
+end
+
+---------------------------------------------------
+-- FINISH PLATFORM
+---------------------------------------------------
+
+local finish = Instance.new("Part")
+finish.Size = Vector3.new(40,3,40)
+finish.Anchored = true
+finish.Material = Enum.Material.Neon
+finish.Color = Color3.fromRGB(60,255,120)
+finish.Position = previousPos + Vector3.new(0,0,50)
+finish.Parent = world
+
+print("GAME GENERATED SUCCESSFULLY")
+
+---------------------------------------------------
+-- DISABLE SCRIPT AFTER BUILD
+---------------------------------------------------
+
+script.Disabled = true
