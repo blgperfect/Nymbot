@@ -1,0 +1,119 @@
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local MarketplaceService = game:GetService("MarketplaceService")
+
+local PRODUCT_ID_SKIP = 3548862641
+local REMOTES_FOLDER = "NeonObbyRemotes"
+
+local player = Players.LocalPlayer
+
+local function waitForGui()
+	while true do
+		local pg = player:FindFirstChild("PlayerGui")
+		if pg then
+			local gui = pg:FindFirstChild("NeonObbyUI")
+			if gui then return gui end
+		end
+		task.wait(0.1)
+	end
+end
+
+local gui = waitForGui()
+
+local remotes = ReplicatedStorage:WaitForChild(REMOTES_FOLDER)
+local rfGet = remotes:WaitForChild("GetClientState")
+local reRequestPaid = remotes:WaitForChild("RequestPaidSkip")
+local reRequestFree = remotes:WaitForChild("RequestFreeSkip")
+local reNotify = remotes:WaitForChild("Notify")
+
+local main = gui:WaitForChild("Main")
+local menuBtn = gui:WaitForChild("MenuButton")
+local tabs = main:WaitForChild("Tabs")
+local page = main:WaitForChild("Page")
+local content = page:WaitForChild("Content")
+local shopFrame = main:WaitForChild("ShopFrame")
+local paidSkipBtn = shopFrame:WaitForChild("PaidSkip")
+local freeSkipBtn = shopFrame:WaitForChild("FreeSkip")
+
+local btnShop = tabs:WaitForChild("ShopTab")
+local btnOptions = tabs:WaitForChild("OptionsTab")
+local btnStats = tabs:WaitForChild("StatsTab")
+
+local currentTab = "Shop"
+
+local function setTab(tabName)
+	currentTab = tabName
+	shopFrame.Visible = (tabName == "Shop")
+
+	if tabName == "Shop" then
+		content.Text = "Shop\n\n- Skip Next Checkpoint: Dev Product (repeatable)\n- FREE Skip (1x): one-time per player (saved)\n\nTip: Use a skip if you're stuck."
+	elseif tabName == "Options" then
+		content.Text = "Options\n\n- Neon visuals enabled by server\n\n(You can add options later.)"
+	elseif tabName == "Stats" then
+		content.Text = "Stats\n\nLoading..."
+	end
+end
+
+local function refreshState()
+	local ok, state = pcall(function()
+		return rfGet:InvokeServer()
+	end)
+	if ok and type(state) == "table" then
+		freeSkipBtn.Visible = not state.FreeSkipUsed
+
+		if currentTab == "Stats" then
+			content.Text = ("Stats\n\nStage: %d/%d\nDeaths: %d\nBest Time: %s\nFree Skip Used: %s")
+				:format(state.Stage or 1, state.MaxStage or 50, state.Deaths or 0, state.BestTimeText or "—", tostring(state.FreeSkipUsed))
+		end
+	end
+end
+
+menuBtn.MouseButton1Click:Connect(function()
+	main.Visible = not main.Visible
+	if main.Visible then
+		setTab(currentTab)
+		refreshState()
+	end
+end)
+
+btnShop.MouseButton1Click:Connect(function()
+	setTab("Shop")
+	refreshState()
+end)
+
+btnOptions.MouseButton1Click:Connect(function()
+	setTab("Options")
+	refreshState()
+end)
+
+btnStats.MouseButton1Click:Connect(function()
+	setTab("Stats")
+	refreshState()
+end)
+
+paidSkipBtn.MouseButton1Click:Connect(function()
+	reRequestPaid:FireServer()
+	MarketplaceService:PromptProductPurchase(player, PRODUCT_ID_SKIP)
+end)
+
+freeSkipBtn.MouseButton1Click:Connect(function()
+	reRequestFree:FireServer()
+end)
+
+reNotify.OnClientEvent:Connect(function(msg)
+	if main.Visible then
+		content.Text = content.Text .. "\n\n" .. tostring(msg)
+	end
+	refreshState()
+end)
+
+task.spawn(function()
+	while true do
+		task.wait(2.0)
+		if main.Visible then
+			refreshState()
+		end
+	end
+end)
+
+setTab("Shop")
